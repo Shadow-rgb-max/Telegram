@@ -8505,17 +8505,15 @@ public class ChatActivity extends BaseFragment implements
                                 AndroidUtilities.cancelRunOnUIThread(chatInviteRunnable);
                                 chatInviteRunnable = null;
                             }
-                            showFolderSelectionDialog(() -> {
-                                showBottomOverlayProgress(true, true);
-                                getMessagesController().addUserToChat(currentChat.id, getUserConfig().getCurrentUser(), 0, null, ChatActivity.this, null);
-                                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.closeSearchByActiveAction);
+                            showBottomOverlayProgress(true, true);
+                            getMessagesController().addUserToChat(currentChat.id, getUserConfig().getCurrentUser(), 0, null, ChatActivity.this, null);
+                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.closeSearchByActiveAction);
 
-                                if (hasReportSpam() && reportSpamButton.getTag(R.id.object_tag) != null) {
-                                    SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
-                                    preferences.edit().putInt("dialog_bar_vis3" + dialog_id, 3).commit();
-                                    getNotificationCenter().postNotificationName(NotificationCenter.peerSettingsDidLoad, dialog_id);
-                                }
-                            });
+                            if (hasReportSpam() && reportSpamButton.getTag(R.id.object_tag) != null) {
+                                SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
+                                preferences.edit().putInt("dialog_bar_vis3" + dialog_id, 3).commit();
+                                getNotificationCenter().postNotificationName(NotificationCenter.peerSettingsDidLoad, dialog_id);
+                            }
                         }
                     } else {
                         toggleMute(true);
@@ -46684,113 +46682,4 @@ public class ChatActivity extends BaseFragment implements
         abstract void drawChatBackgroundElements(Canvas canvas, @Nullable RectF position);
         abstract void drawChatForegroundElements(Canvas canvas, @Nullable RectF position);
     }
-
-    // ===== MODIFICATION: Folder selection on channel subscribe =====
-
-    /**
-     * Shows BottomSheet with folder selection when subscribing to a channel.
-     * After selection (or cancel), calls onComplete.
-     */
-    private void showFolderSelectionDialog(Runnable onComplete) {
-        MessagesController messagesController = getMessagesController();
-        ArrayList<MessagesController.DialogFilter> folders = messagesController.dialogFilters;
-
-        if (folders == null || folders.isEmpty() || currentChat == null) {
-            onComplete.run();
-            return;
-        }
-
-        Context context = getContext();
-        if (context == null) {
-            onComplete.run();
-            return;
-        }
-
-        final ArrayList<MessagesController.DialogFilter> availableFolders = new ArrayList<>();
-        for (MessagesController.DialogFilter filter : folders) {
-            if (filter != null && filter.id != 0) {
-                availableFolders.add(filter);
-            }
-        }
-
-        if (availableFolders.isEmpty()) {
-            onComplete.run();
-            return;
-        }
-
-        BottomSheet.Builder builder = new BottomSheet.Builder(context, themeDelegate);
-        builder.setTitle(LocaleController.getString(R.string.AddToFolder));
-
-        CharSequence[] items = new CharSequence[availableFolders.size() + 1];
-        items[0] = LocaleController.getString(R.string.DoNotAddToFolder);
-        for (int i = 0; i < availableFolders.size(); i++) {
-            items[i + 1] = availableFolders.get(i).name;
-        }
-
-        builder.setItems(items, (dialog, which) -> {
-            if (which > 0) {
-                MessagesController.DialogFilter selectedFolder = availableFolders.get(which - 1);
-                addDialogToFolder(dialog_id, selectedFolder.id);
-            }
-            onComplete.run();
-        });
-
-        BottomSheet sheet = builder.create();
-        sheet.setOnDismissListener(dialog -> onComplete.run());
-        showDialog(sheet);
-    }
-
-    /**
-     * Adds dialog to specified folder (DialogFilter).
-     */
-    private void addDialogToFolder(long dialogId, int folderId) {
-        MessagesController messagesController = getMessagesController();
-        MessagesController.DialogFilter filter = messagesController.dialogFiltersById.get(folderId);
-        if (filter == null) return;
-
-        if (filter.alwaysShow.contains(dialogId)) {
-            return;
-        }
-
-        filter.alwaysShow.add(dialogId);
-
-        TLRPC.TL_messages_updateDialogFilter req = new TLRPC.TL_messages_updateDialogFilter();
-        req.id = folderId;
-        req.filter = new TLRPC.TL_dialogFilter();
-        req.filter.id = folderId;
-        req.filter.title = filter.name;
-
-        req.filter.include_peers = new ArrayList<>();
-        for (int i = 0; i < filter.alwaysShow.size(); i++) {
-            long did = filter.alwaysShow.get(i);
-            TLRPC.InputPeer peer = messagesController.getInputPeer(did);
-            if (peer != null) {
-                req.filter.include_peers.add(peer);
-            }
-        }
-
-        if (filter.neverShow != null && !filter.neverShow.isEmpty()) {
-            req.filter.exclude_peers = new ArrayList<>();
-            for (int i = 0; i < filter.neverShow.size(); i++) {
-                long did = filter.neverShow.get(i);
-                TLRPC.InputPeer peer = messagesController.getInputPeer(did);
-                if (peer != null) {
-                    req.filter.exclude_peers.add(peer);
-                }
-            }
-        }
-
-        req.filter.flags = filter.flags;
-
-        getConnectionsManager().sendRequest(req, (response, error) -> {
-            AndroidUtilities.runOnUIThread(() -> {
-                if (error == null) {
-                    getNotificationCenter().postNotificationName(NotificationCenter.dialogFiltersUpdated);
-                } else {
-                    filter.alwaysShow.remove(dialogId);
-                }
-            });
-        });
-    }
-    // ===== END MODIFICATION =====
 }
