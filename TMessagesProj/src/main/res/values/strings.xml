@@ -10905,5 +10905,5 @@
     <string name="WearAuthEmojis">Compare emojis on your watch</string>
     <string name="WearAuthEmojisLogIn">Log In</string>
     <string name="AddToFolder">Add to Folder</string>
-    <string name="DoNotAddToFolder">Don't Add to Folder</string>
+    <string name="DoNotAddToFolder">Do not Add to Folder</string>
 </resources>

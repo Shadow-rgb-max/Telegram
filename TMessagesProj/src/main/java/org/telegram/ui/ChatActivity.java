@@ -46718,7 +46718,7 @@ public class ChatActivity extends BaseFragment implements
             return;
         }
 
-        BottomSheet.Builder builder = new BottomSheet.Builder(context, themeDelegate);
+        BottomSheet.Builder builder = new BottomSheet.Builder(context, false, null);
         builder.setTitle(LocaleController.getString(R.string.AddToFolder));
 
         CharSequence[] items = new CharSequence[availableFolders.size() + 1];
@@ -46758,7 +46758,8 @@ public class ChatActivity extends BaseFragment implements
         req.id = folderId;
         req.filter = new TLRPC.TL_dialogFilter();
         req.filter.id = folderId;
-        req.filter.title = filter.name;
+        req.filter.title = new TLRPC.TL_textWithEntities();
+        req.filter.title.text = filter.name;
 
         req.filter.include_peers = new ArrayList<>();
         for (int i = 0; i < filter.alwaysShow.size(); i++) {
