@@ -40221,8 +40221,10 @@ public class ChatActivity extends BaseFragment implements
                     if (cell != null && cell.channelRecommendationsCell != null) {
                         getNotificationCenter().postNotificationName(NotificationCenter.channelRecommendationsLoaded, cell.channelRecommendationsCell.chatId);
                     }
-                    getMessagesController().addUserToChat(chat.id, getUserConfig().getCurrentUser(), 0, null, ChatActivity.this, () -> {
-                        BulletinFactory.of(ChatActivity.this).createSimpleBulletin(R.raw.contact_check, LocaleController.formatString(R.string.YouJoinedChannel, chat == null ? "" : chat.title)).show(true);
+                    showFolderSelectionDialog(() -> {
+                        getMessagesController().addUserToChat(chat.id, getUserConfig().getCurrentUser(), 0, null, ChatActivity.this, () -> {
+                            BulletinFactory.of(ChatActivity.this).createSimpleBulletin(R.raw.contact_check, LocaleController.formatString(R.string.YouJoinedChannel, chat == null ? "" : chat.title)).show(true);
+                        });
                     });
                 });
                 previewMenu.addView(joinChannel);
